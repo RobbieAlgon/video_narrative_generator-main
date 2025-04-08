@@ -11,9 +11,15 @@ def setup_repository():
     # Nome da pasta do projeto
     project_folder = "video_narrative_generator-main"
     
-    # Garante que estamos na raiz do Colab
-    if os.path.basename(os.getcwd()) == project_folder:
+    # Volta para a raiz do Colab (/content)
+    while os.path.basename(os.getcwd()) == project_folder:
         os.chdir("..")
+        print(f"Voltando um nível: {os.getcwd()}")
+    
+    # Garante que estamos em /content
+    if not os.path.basename(os.getcwd()) == "content":
+        os.chdir("/content")
+        print(f"Mudando para /content: {os.getcwd()}")
     
     # Remove a pasta se ela existir
     if os.path.exists(project_folder):
