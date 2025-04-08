@@ -28,6 +28,8 @@ def install_dependencies():
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask-ngrok"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "ngrok"], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors"], check=True)
+    print("Dependências instaladas com sucesso!")
 
 def setup_ngrok():
     """Configura o ngrok para acesso público"""
