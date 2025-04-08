@@ -14,6 +14,7 @@ from models import load_models
 from content import process_json_prompts, generate_content, clear_gpu_memory
 from video import create_narrative_video
 from groq import Groq
+import shutil
 
 # Configuração do Flask
 app = Flask(__name__)
@@ -21,6 +22,26 @@ CORS(app)
 
 # Variável global para armazenar a URL do ngrok
 ngrok_url = None
+
+def setup_repository():
+    """Remove a pasta do projeto (se existir) e clona novamente"""
+    print("Configurando repositório...")
+    
+    # Nome da pasta do projeto
+    project_folder = "video_narrative_generator-main"
+    
+    # Remove a pasta se ela existir
+    if os.path.exists(project_folder):
+        print(f"Removendo pasta {project_folder}...")
+        shutil.rmtree(project_folder)
+    
+    # Clona o repositório
+    print("Clonando repositório...")
+    subprocess.run(["git", "clone", "https://github.com/RobbieAlgon/video_narrative_generator-main.git"], check=True)
+    
+    # Entra na pasta do projeto
+    os.chdir(project_folder)
+    print("Repositório configurado com sucesso!")
 
 def install_dependencies():
     """Instala as dependências necessárias"""
@@ -124,6 +145,9 @@ def start_api():
     app.run(host='0.0.0.0', port=5000)
 
 if __name__ == '__main__':
+    # Configura o repositório
+    setup_repository()
+    
     # Instala dependências
     install_dependencies()
     create_directories()
