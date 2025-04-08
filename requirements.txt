@@ -10,3 +10,6 @@ tqdm
 groq
 flask
 pyngrok
+flask-cors
+flask-ngrok
+ngrok
