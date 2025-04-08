@@ -11,6 +11,10 @@ def setup_repository():
     # Nome da pasta do projeto
     project_folder = "video_narrative_generator-main"
     
+    # Garante que estamos na raiz do Colab
+    if os.path.basename(os.getcwd()) == project_folder:
+        os.chdir("..")
+    
     # Remove a pasta se ela existir
     if os.path.exists(project_folder):
         print(f"Removendo pasta {project_folder}...")
@@ -22,15 +26,16 @@ def setup_repository():
     
     # Entra na pasta do projeto
     os.chdir(project_folder)
+    print(f"Diretório atual: {os.getcwd()}")
     print("Repositório configurado com sucesso!")
 
 def install_dependencies():
     """Instala as dependências necessárias"""
     print("Instalando dependências...")
+    # Instala as dependências básicas primeiro
+    subprocess.run([sys.executable, "-m", "pip", "install", "flask", "flask-cors", "flask-ngrok", "ngrok"], check=True)
+    # Depois instala o resto das dependências
     subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "flask-ngrok"], check=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "ngrok"], check=True)
-    subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors"], check=True)
     print("Dependências instaladas com sucesso!")
 
 # Agora importamos as dependências após a instalação
