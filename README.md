@@ -18,16 +18,13 @@ Este projeto permite gerar vídeos narrativos automaticamente usando IA. Ele com
 ```
 
 4. Aguarde a instalação das dependências e o início da API
-5. Quando a API iniciar, você receberá uma URL do ngrok
-6. Use a URL para fazer requisições à API
+5. Quando a API iniciar, você verá instruções sobre como fazer requisições
+6. Use os comandos fornecidos para gerar vídeos
 
 ### Exemplo de requisição para gerar vídeo:
 
 ```python
 import requests
-
-# Substitua pela URL fornecida pelo ngrok
-API_URL = "https://seu-dominio.ngrok-free.app"
 
 # Dados para gerar o vídeo
 data = {
@@ -44,7 +41,7 @@ data = {
 }
 
 # Enviar requisição
-response = requests.post(f"{API_URL}/generate", json=data)
+response = requests.post('http://localhost:5000/generate', json=data)
 print(response.json())
 ```
 

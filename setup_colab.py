@@ -1,12 +1,20 @@
 import os
 import subprocess
 import sys
+from flask import Flask, request, jsonify
+import logging
+from config import VideoConfig
+from models import load_models
+from content import process_json_prompts, generate_content, clear_gpu_memory
+from video import create_narrative_video
+import json
+from groq import Groq
 
 def install_dependencies():
     print("Instalando dependências...")
     subprocess.run([sys.executable, "-m", "pip", "install", "torch", "torchvision"])
     subprocess.run([sys.executable, "-m", "pip", "install", "kokoro>=0.9.2"])
-    subprocess.run([sys.executable, "-m", "pip", "install", "soundfile", "diffusers", "moviepy", "scipy", "numpy", "tqdm", "groq", "flask", "flask-ngrok"])
+    subprocess.run([sys.executable, "-m", "pip", "install", "soundfile", "diffusers", "moviepy", "scipy", "numpy", "tqdm", "groq", "flask"])
     
     # Instalar espeak-ng no Linux (Colab)
     if os.name != 'nt':  # Se não for Windows
@@ -21,16 +29,7 @@ def create_directories():
 
 def start_api():
     print("Iniciando a API...")
-    from flask import Flask, request, jsonify
-    from flask_ngrok import run_with_ngrok
-    import logging
-    from config import VideoConfig
-    from models import load_models
-    from content import process_json_prompts, generate_content, clear_gpu_memory
-    from video import create_narrative_video
-    import json
-    from groq import Groq
-
+    
     # Configurar logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
@@ -124,9 +123,16 @@ def start_api():
     def health_check():
         return jsonify({"status": "healthy"})
 
-    # Iniciar a API com ngrok
-    run_with_ngrok(app)
-    app.run()
+    # Iniciar a API
+    print("\n=== API Iniciada ===")
+    print("A API está rodando localmente. Para acessá-la no Colab, use o seguinte comando:")
+    print("!curl -X POST http://localhost:5000/generate -H 'Content-Type: application/json' -d '{\"historia\":\"sua história\",\"num_cenas\":3,\"project_name\":\"teste\",\"video_type\":\"short\",\"lang_code\":\"p\"}'")
+    print("\nPara acessar a API de outro notebook, use:")
+    print("import requests")
+    print("response = requests.post('http://localhost:5000/generate', json={\"historia\":\"sua história\",\"num_cenas\":3,\"project_name\":\"teste\",\"video_type\":\"short\",\"lang_code\":\"p\"})")
+    print("print(response.json())")
+    
+    app.run(host='0.0.0.0', port=5000)
 
 if __name__ == "__main__":
     print("=== Iniciando configuração do Video Narrative Generator ===")
