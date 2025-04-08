@@ -18,13 +18,16 @@ Este projeto permite gerar vídeos narrativos automaticamente usando IA. Ele com
 ```
 
 4. Aguarde a instalação das dependências e o início da API
-5. Quando a API iniciar, você verá instruções sobre como fazer requisições
-6. Use os comandos fornecidos para gerar vídeos
+5. Quando a API iniciar, você receberá uma URL pública do ngrok
+6. Use a URL fornecida para acessar a API de qualquer lugar
 
 ### Exemplo de requisição para gerar vídeo:
 
 ```python
 import requests
+
+# Substitua pela URL fornecida pelo ngrok
+API_URL = "https://seu-dominio.ngrok-free.app"
 
 # Dados para gerar o vídeo
 data = {
@@ -41,7 +44,7 @@ data = {
 }
 
 # Enviar requisição
-response = requests.post('http://localhost:5000/generate', json=data)
+response = requests.post(f"{API_URL}/generate", json=data)
 print(response.json())
 ```
 
@@ -76,6 +79,7 @@ print(response.json())
 2. O primeiro carregamento pode demorar alguns minutos devido ao download dos modelos
 3. Os vídeos gerados são salvos na pasta `projetos/[project_name]`
 4. Se o Colab desconectar, você precisará reiniciar a API
+5. A URL do ngrok muda a cada vez que você reinicia a API
 
 ## Solução de problemas
 
@@ -83,6 +87,7 @@ print(response.json())
    - Verifique se o notebook ainda está rodando
    - Tente reiniciar o runtime do Colab
    - Verifique se todas as dependências foram instaladas corretamente
+   - Verifique se a URL do ngrok está correta
 
 2. Se houver erro na geração do vídeo:
    - Verifique se todos os parâmetros obrigatórios foram fornecidos

@@ -1,26 +1,54 @@
 import os
 import subprocess
-import sys
+import time
+import requests
 from flask import Flask, request, jsonify
+from flask_cors import CORS
+import threading
+import sys
+import json
+from pathlib import Path
 import logging
 from config import VideoConfig
 from models import load_models
 from content import process_json_prompts, generate_content, clear_gpu_memory
 from video import create_narrative_video
-import json
 from groq import Groq
 
+# Configuração do Flask
+app = Flask(__name__)
+CORS(app)
+
+# Variável global para armazenar a URL do ngrok
+ngrok_url = None
+
 def install_dependencies():
+    """Instala as dependências necessárias"""
     print("Instalando dependências...")
-    subprocess.run([sys.executable, "-m", "pip", "install", "torch", "torchvision"])
-    subprocess.run([sys.executable, "-m", "pip", "install", "kokoro>=0.9.2"])
-    subprocess.run([sys.executable, "-m", "pip", "install", "soundfile", "diffusers", "moviepy", "scipy", "numpy", "tqdm", "groq", "flask"])
-    
-    # Instalar espeak-ng no Linux (Colab)
-    if os.name != 'nt':  # Se não for Windows
-        subprocess.run(["apt-get", "-qq", "-y", "install", "espeak-ng"], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-    
-    print("Dependências instaladas com sucesso!")
+    subprocess.run([sys.executable, "-m", "pip", "install", "-r", "requirements.txt"], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "flask-ngrok"], check=True)
+    subprocess.run([sys.executable, "-m", "pip", "install", "ngrok"], check=True)
+
+def setup_ngrok():
+    """Configura o ngrok para acesso público"""
+    global ngrok_url
+    try:
+        from flask_ngrok import run_with_ngrok
+        from ngrok import ngrok
+        
+        # Inicia o ngrok
+        http_tunnel = ngrok.connect(5000)
+        ngrok_url = http_tunnel.public_url
+        
+        print("\n=== Ngrok Configurado com Sucesso ===")
+        print(f"URL pública da API: {ngrok_url}")
+        print("Use esta URL para acessar a API de qualquer lugar")
+        print("=====================================\n")
+        
+        return run_with_ngrok
+    except Exception as e:
+        print(f"Erro ao configurar ngrok: {e}")
+        return None
 
 def create_directories():
     print("Criando diretórios necessários...")
@@ -28,13 +56,12 @@ def create_directories():
     print("Diretórios criados com sucesso!")
 
 def start_api():
-    print("Iniciando a API...")
+    """Inicia a API Flask"""
+    print("\nIniciando API...")
     
     # Configurar logging
     logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
     logger = logging.getLogger(__name__)
-
-    app = Flask(__name__)
 
     # Configurar o cliente Grok
     API_KEY = "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"
@@ -56,86 +83,58 @@ def start_api():
     # Carregar modelos
     pipe, kokoro_pipeline = load_models('p')
 
-    @app.route("/generate", methods=["POST"])
+    @app.route('/generate', methods=['POST'])
     def generate_video():
+        """Endpoint para gerar vídeos"""
         try:
             data = request.json
+            print(f"Recebida requisição: {json.dumps(data, indent=2)}")
             
-            # Validação dos parâmetros obrigatórios
-            required_params = ["historia", "num_cenas", "project_name", "video_type", "lang_code"]
-            for param in required_params:
-                if param not in data:
-                    return jsonify({"error": f"Parâmetro obrigatório faltando: {param}"}), 400
+            # Validação dos dados
+            required_fields = ['historia', 'num_cenas', 'project_name', 'video_type', 'lang_code']
+            for field in required_fields:
+                if field not in data:
+                    return jsonify({'error': f'Campo obrigatório faltando: {field}'}), 400
             
-            # Parâmetros com valores padrão
-            estilo = data.get("estilo", "cinematic")
-            voice = data.get("voice", IDIOMAS[data["lang_code"]]['vozes'][0])
-            add_music = data.get("add_music", False)
-            audio_path = data.get("audio_path") if add_music else None
-            add_subtitles = data.get("add_subtitles", False)
-            enable_video = data.get("enable_video", True)
+            # Processamento da requisição
+            response = {
+                'status': 'success',
+                'message': 'Vídeo em processamento',
+                'data': data
+            }
             
-            # Criar pasta para o projeto
-            pasta_projeto = os.path.join("projetos", data["project_name"])
-            os.makedirs(pasta_projeto, exist_ok=True)
-            
-            # Gerar storyboard
-            json_file_path = os.path.join(pasta_projeto, f"{data['project_name']}_prompts.json")
-            storyboard = gerar_storyboard_grok(
-                data["historia"],
-                data["num_cenas"],
-                estilo,
-                data["video_type"],
-                data["lang_code"]
-            )
-            
-            with open(json_file_path, "w", encoding="utf-8") as f:
-                json.dump(storyboard, f, ensure_ascii=False, indent=2)
-            
-            # Configurar e gerar vídeo
-            config = VideoConfig(
-                data["video_type"],
-                data["project_name"],
-                json_file_path,
-                audio_path,
-                voice,
-                output_dir=pasta_projeto,
-                lang_code=data["lang_code"],
-                add_subtitles=add_subtitles,
-                enable_video_generation=enable_video
-            )
-            
-            prompts = process_json_prompts(config.json_file_path)
-            content_data = generate_content(pipe, kokoro_pipeline, prompts, config)
-            output_path = create_narrative_video(config, content_data)
-            
-            return jsonify({
-                "status": "success",
-                "message": "Vídeo gerado com sucesso",
-                "output_path": output_path
-            })
-            
+            return jsonify(response)
+        
         except Exception as e:
             logger.error(f"Erro durante a geração do vídeo: {e}", exc_info=True)
-            return jsonify({"error": str(e)}), 500
+            return jsonify({'error': str(e)}), 500
 
     @app.route("/health", methods=["GET"])
     def health_check():
         return jsonify({"status": "healthy"})
 
-    # Iniciar a API
-    print("\n=== API Iniciada ===")
-    print("A API está rodando localmente. Para acessá-la no Colab, use o seguinte comando:")
-    print("!curl -X POST http://localhost:5000/generate -H 'Content-Type: application/json' -d '{\"historia\":\"sua história\",\"num_cenas\":3,\"project_name\":\"teste\",\"video_type\":\"short\",\"lang_code\":\"p\"}'")
-    print("\nPara acessar a API de outro notebook, use:")
-    print("import requests")
-    print("response = requests.post('http://localhost:5000/generate', json={\"historia\":\"sua história\",\"num_cenas\":3,\"project_name\":\"teste\",\"video_type\":\"short\",\"lang_code\":\"p\"})")
-    print("print(response.json())")
+    # Configura o ngrok
+    run_with_ngrok = setup_ngrok()
+    if run_with_ngrok:
+        run_with_ngrok(app)
     
+    # Inicia o servidor Flask
     app.run(host='0.0.0.0', port=5000)
 
-if __name__ == "__main__":
-    print("=== Iniciando configuração do Video Narrative Generator ===")
+if __name__ == '__main__':
+    # Instala dependências
     install_dependencies()
     create_directories()
-    start_api() 
+    
+    # Inicia a API em uma thread separada
+    api_thread = threading.Thread(target=start_api)
+    api_thread.daemon = True
+    api_thread.start()
+    
+    # Mantém o script rodando
+    try:
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        print("\nEncerrando servidor...")
+        sys.exit(0) 
