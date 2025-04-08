@@ -1,27 +1,8 @@
 import os
 import subprocess
 import time
-import requests
-from flask import Flask, request, jsonify
-from flask_cors import CORS
-import threading
 import sys
-import json
-from pathlib import Path
-import logging
-from config import VideoConfig
-from models import load_models
-from content import process_json_prompts, generate_content, clear_gpu_memory
-from video import create_narrative_video
-from groq import Groq
 import shutil
-
-# Configuração do Flask
-app = Flask(__name__)
-CORS(app)
-
-# Variável global para armazenar a URL do ngrok
-ngrok_url = None
 
 def setup_repository():
     """Remove a pasta do projeto (se existir) e clona novamente"""
@@ -51,6 +32,27 @@ def install_dependencies():
     subprocess.run([sys.executable, "-m", "pip", "install", "ngrok"], check=True)
     subprocess.run([sys.executable, "-m", "pip", "install", "flask-cors"], check=True)
     print("Dependências instaladas com sucesso!")
+
+# Agora importamos as dependências após a instalação
+import requests
+from flask import Flask, request, jsonify
+from flask_cors import CORS
+import threading
+import json
+from pathlib import Path
+import logging
+from config import VideoConfig
+from models import load_models
+from content import process_json_prompts, generate_content, clear_gpu_memory
+from video import create_narrative_video
+from groq import Groq
+
+# Configuração do Flask
+app = Flask(__name__)
+CORS(app)
+
+# Variável global para armazenar a URL do ngrok
+ngrok_url = None
 
 def setup_ngrok():
     """Configura o ngrok para acesso público"""
