@@ -25,6 +25,9 @@ def clean_and_setup():
     os.chdir(project_folder)
     print(f"Diretório atual: {os.getcwd()}")
     
+    # Adiciona o diretório atual ao PYTHONPATH
+    sys.path.insert(0, os.getcwd())
+    
     # Instala as dependências básicas
     print("\nInstalando dependências básicas...")
     subprocess.run([sys.executable, "-m", "pip", "install", "flask", "flask-cors", "flask-ngrok", "ngrok"], check=True)
@@ -47,11 +50,22 @@ if __name__ == '__main__':
     import json
     from pathlib import Path
     import logging
-    from config import VideoConfig
-    from models import load_models
-    from content import process_json_prompts, generate_content, clear_gpu_memory
-    from video import create_narrative_video
-    from groq import Groq
+    
+    # Importa os módulos do projeto
+    try:
+        from config import VideoConfig
+        from models import load_models
+        from content import process_json_prompts, generate_content, clear_gpu_memory
+        from video import create_narrative_video
+        from groq import Groq
+    except ImportError as e:
+        print(f"Erro ao importar módulos: {e}")
+        print("Verificando diretório atual e conteúdo...")
+        print(f"Diretório atual: {os.getcwd()}")
+        print("Conteúdo do diretório:")
+        for item in os.listdir():
+            print(f"- {item}")
+        sys.exit(1)
     
     # Configuração do Flask
     app = Flask(__name__)
