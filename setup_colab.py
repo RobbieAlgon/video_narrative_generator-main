@@ -7,8 +7,14 @@ def clean_and_setup():
     """Limpa o ambiente e configura o projeto"""
     print("=== Iniciando configuração do ambiente ===")
     
-    # Volta para a raiz do Colab
-    os.chdir("/content")
+    # Garante que estamos em um diretório válido
+    try:
+        os.chdir("/content")
+    except:
+        # Se não conseguir ir para /content, tenta criar
+        os.makedirs("/content", exist_ok=True)
+        os.chdir("/content")
+    
     print(f"Diretório atual: {os.getcwd()}")
     
     # Remove a pasta do projeto se existir
@@ -17,9 +23,28 @@ def clean_and_setup():
         print(f"Removendo pasta {project_folder}...")
         shutil.rmtree(project_folder)
     
+    # Garante que o diretório atual está vazio
+    for item in os.listdir():
+        if item != project_folder:  # Não remove a pasta que vamos criar
+            try:
+                if os.path.isdir(item):
+                    shutil.rmtree(item)
+                else:
+                    os.remove(item)
+            except:
+                pass
+    
     # Clona o repositório
     print("Clonando repositório...")
-    subprocess.run(["git", "clone", "https://github.com/RobbieAlgon/video_narrative_generator-main.git"], check=True)
+    try:
+        subprocess.run(["git", "clone", "https://github.com/RobbieAlgon/video_narrative_generator-main.git"], check=True)
+    except subprocess.CalledProcessError as e:
+        print(f"Erro ao clonar repositório: {e}")
+        print("Tentando novamente...")
+        # Tenta remover a pasta novamente e clonar
+        if os.path.exists(project_folder):
+            shutil.rmtree(project_folder)
+        subprocess.run(["git", "clone", "https://github.com/RobbieAlgon/video_narrative_generator-main.git"], check=True)
     
     # Entra na pasta do projeto
     os.chdir(project_folder)
